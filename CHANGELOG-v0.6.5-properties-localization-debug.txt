@@ -1,0 +1,12 @@
+N1PilotDesktop v0.6.5-properties-localization-debug
+
+Based on v0.6.4-language-v060-engine-debug.
+
+Changes:
+- Localized the remote Bitvise-style properties dialog through the existing v0.6.0 source-preserving language engine.
+- Refreshes dynamic remote property title, type, size formatting, and timestamps when the language changes while the dialog is open.
+- Replaced the ShellExecuteEx properties-verb path with SHObjectProperties (SHOP_FILEPATH). The native helper stays alive while the property sheet window exists; it no longer exits immediately after invocation.
+- Added native helper spawn/exit and duration records, including successful exits, to DEBUG logs.
+- Preserves v0.6.4 SFTP layout, DEBUG controls, language engine, property editor, and drag/drop behavior.
+
+Validation: source syntax checks, smoke tests, and ZIP integrity can be run locally via build.bat. Actual Windows Shell property-sheet behavior still requires Windows testing.

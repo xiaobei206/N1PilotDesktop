@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-src https:; child-src https:; object-src 'none';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>N1PilotDesktop</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css" />
+</head>
+<body>
+  <header class="topbar" id="app-titlebar">
+    <img class="brand-mark" src="assets/n1pilot.svg" alt="N1PilotDesktop" />
+    <div class="brand"><strong>N1PilotDesktop <em>- by Edison</em></strong><span>左侧 ChatGPT · 右侧 SSH · 由你决定每一步</span></div>
+    <div class="top-status"><i id="chat-dot" class="dot yellow"></i><span id="chat-status">ChatGPT 加载中</span><i id="ssh-dot" class="dot red"></i><span id="ssh-status">无活动 SSH</span></div>
+    <div class="topbar-actions"><div class="language-control" role="group" aria-label="Language"><span>语言 / Language</span><button id="language-zh-btn" class="btn tiny language-btn active" type="button" lang="zh-CN" aria-pressed="true">中文</button><button id="language-en-btn" class="btn tiny language-btn" type="button" lang="en" aria-pressed="false">English</button></div><button id="window-min-btn" class="window-control" aria-label="最小化">—</button><button id="window-max-btn" class="window-control" aria-label="最大化/还原">□</button><button id="window-close-btn" class="window-control close" aria-label="关闭">×</button></div>
+  </header>
+
+  <main class="layout">
+    <section class="chat-pane panel">
+      <div class="pane-heading">
+        <div><strong>ChatGPT 对话</strong><span class="subline">左侧浏览器单独使用代理；不会改变 SSH 的默认直连行为</span></div>
+        <div class="browser-controls">
+          <button id="back-btn" class="btn icon-btn" title="后退">←</button>
+          <button id="forward-btn" class="btn icon-btn" title="前进">→</button>
+          <button id="reload-btn" class="btn icon-btn" title="刷新">⟳</button>
+          <button id="open-chat-btn" class="btn small">打开 ChatGPT</button>
+        </div>
+      </div>
+
+      <details id="proxy-panel" class="proxy-panel">
+        <summary><span>GPT 代理设置</span><span id="proxy-summary" class="proxy-summary">SOCKS5 · 127.0.0.1:10808</span></summary>
+        <div class="proxy-settings-grid">
+          <label class="check-field"><input id="gpt-proxy-enabled" type="checkbox" checked /><span>ChatGPT 使用此代理</span></label>
+          <label class="field proxy-type-field"><span>类型</span><select id="proxy-type"><option value="socks5">SOCKS5</option><option value="http">HTTP</option></select></label>
+          <label class="field proxy-host-field"><span>代理地址</span><input id="proxy-host" value="127.0.0.1" spellcheck="false" autocomplete="off" /></label>
+          <label class="field proxy-port-field"><span>端口</span><input id="proxy-port" type="number" min="1" max="65535" value="10808" /></label>
+          <button id="apply-proxy-btn" class="btn primary apply-proxy-btn">应用并刷新 GPT</button>
+          <div id="proxy-status" class="proxy-status">默认 SOCKS5 127.0.0.1:10808；V2RayN 端口如不同可在此修改。代理不含用户名/密码认证。</div>
+        </div>
+      </details>
+
+      <div class="webview-wrap">
+        <webview id="chat-browser" src="https://chatgpt.com/" partition="persist:chatgpt" allowpopups></webview>
+        <div id="webview-cover" class="webview-cover"><span class="spinner"></span><span>正在等待 ChatGPT 页面…</span></div>
+      </div>
+      <div class="chat-foot"><span id="conversation-url">https://chatgpt.com/</span><span>独立持久登录会话 · 不使用 API Key</span></div>
+    </section>
+
+    <section class="right-pane">
+      <section class="panel connection-panel">
+        <div class="pane-heading"><div><strong>SSH 连接 / 多会话</strong><span class="subline">每次连接创建一个独立会话标签；密码按连接配置加密保存</span></div><span id="connection-badge" class="badge">无活动会话</span></div>
+        <div class="profile-row"><label class="field profile-select-field"><span>已保存的连接</span><select id="ssh-profile-select"><option value="">选择保存的连接…</option></select></label><button id="save-ssh-profile-btn" class="btn small">保存/更新配置</button><button id="delete-ssh-profile-btn" class="btn small ghost" disabled>删除配置</button></div>
+        <div class="form-grid">
+          <label class="field host-field"><span>地址 / IP</span><input id="ssh-host" type="text" value="192.168.60.179" spellcheck="false" autocomplete="off" /></label>
+          <label class="field port-field"><span>端口</span><input id="ssh-port" type="number" value="22" min="1" max="65535" /></label>
+          <label class="field user-field"><span>账号</span><input id="ssh-user" type="text" value="root" autocomplete="username" /></label>
+          <label class="field password-field"><span>密码</span><input id="ssh-password" type="password" placeholder="SSH 登录密码" autocomplete="new-password" /></label>
+        </div>
+        <div class="connection-actions"><button id="connect-btn" class="btn primary">＋ 新建 SSH 会话</button><button id="disconnect-btn" class="btn ghost" disabled>断开当前</button><label class="check-field ssh-proxy-check"><input id="ssh-use-proxy" type="checkbox" /><span>新建 SSH 会话走代理（默认关闭）</span></label><span id="ssh-message" class="muted">首次连接需核对主机指纹</span></div>
+        <div id="hostkey-box" class="hostkey-box hidden">
+          <strong id="hostkey-title">确认 SSH 主机指纹</strong><p id="hostkey-desc"></p><code id="hostkey-value"></code>
+          <div class="inline-actions"><button id="trust-host-btn" class="btn warning">信任此指纹</button><button id="cancel-hostkey-btn" class="btn ghost">取消</button></div>
+        </div>
+        <div id="session-tabs" class="session-tabs" aria-label="SSH 会话标签"><span class="empty-sessions">连接 SSH 后，这里会出现会话标签</span></div>
+        <div id="ssh-tab-context-menu" class="ssh-tab-context-menu hidden" role="menu"></div>
+      </section>
+
+      <section class="panel transfer-panel" id="transfer-panel">
+        <div class="pane-heading sftp-heading"><div><strong>文件管理器（SFTP）</strong><span class="subline">本地与远程双栏 · 多选、右键操作、内外部拖放</span></div><div class="sftp-heading-actions"><label class="debug-mode-toggle" title="记录窗口尺寸、布局容器、交互终端尺寸及 SFTP 诊断日志"><input id="sftp-debug-toggle" type="checkbox" checked /><span>DEBUG</span></label><button id="debug-open-log-btn" class="btn tiny ghost debug-log-btn" title="打开调试日志目录">日志目录</button><span id="sftp-session-badge" class="badge">当前会话</span><button id="sftp-toggle-btn" class="btn icon-btn ghost" title="展开 SFTP" aria-expanded="false">➜</button></div></div>
+        <div id="sftp-body" class="sftp-body hidden">
+          <div class="sftp-toolbar">
+            <div class="sftp-location"><div class="sftp-location-head"><strong>本地目录</strong><div class="sftp-location-buttons"><button id="local-up-btn" class="btn tiny ghost" title="上级目录">↑</button><button id="local-pick-btn" class="btn tiny ghost">选择目录</button><button id="local-refresh-btn" class="btn tiny ghost">刷新</button></div></div><div class="path-control"><input id="local-path" type="text" spellcheck="false" placeholder="本地文件夹路径" /><button id="local-open-btn" class="btn tiny">打开</button></div><div class="filter-control"><input id="local-filter" type="search" placeholder="过滤文件名…" /><select id="local-sort" title="排序"><option value="name">名称</option><option value="size">大小</option><option value="mtime">修改时间</option></select></div><div id="local-files" class="file-list" tabindex="0" aria-label="本地文件列表"></div><div class="file-list-foot"><span id="local-selection-count">未选择文件</span><button id="local-upload-btn" class="btn small primary" disabled>上传选中 →</button></div></div>
+            <div class="sftp-location"><div class="sftp-location-head"><strong>远程目录</strong><div class="sftp-location-buttons"><button id="remote-up-btn" class="btn tiny ghost" title="上级目录">↑</button><button id="remote-refresh-btn" class="btn tiny ghost">刷新</button></div></div><div class="path-control"><input id="remote-path" type="text" spellcheck="false" value="/tmp" placeholder="远程目录路径" /><button id="remote-open-btn" class="btn tiny">打开</button></div><div class="filter-control"><input id="remote-filter" type="search" placeholder="过滤文件名…" /><select id="remote-sort" title="Sort"><option value="name">名称</option><option value="size">大小</option><option value="mtime">修改时间</option></select></div><div id="remote-files" class="file-list remote-file-list" tabindex="0" aria-label="远程文件列表"></div><div class="file-list-foot"><span id="remote-selection-count">未选择文件</span><button id="remote-download-btn" class="btn small primary" disabled>← 下载选中</button></div></div>
+          </div>
+          <div class="sftp-actionbar">
+            <button id="sftp-new-folder-btn" class="btn tiny">新建文件夹</button><button id="sftp-rename-btn" class="btn tiny" disabled>重命名</button><button id="sftp-delete-btn" class="btn tiny danger" disabled>删除</button><button id="sftp-properties-btn" class="btn tiny" disabled>属性</button><button id="sftp-chmod-btn" class="btn tiny" disabled>修改权限</button><button id="sftp-move-btn" class="btn tiny" disabled>移动到…</button><button id="sftp-copy-path-btn" class="btn tiny" disabled>复制完整路径</button><label class="check-field"><input id="sftp-show-hidden" type="checkbox" /><span>显示隐藏文件</span></label>
+          </div>
+          <div id="transfer-status" class="muted transfer-status">连接 SSH 后可浏览远程目录。</div>
+          <section class="transfer-queue"><div class="queue-heading"><strong>传输队列</strong><div><button id="retry-all-failed-btn" class="btn tiny ghost">重试全部失败项</button><button id="clear-failed-btn" class="btn tiny ghost">清除失败记录</button></div></div><div class="queue-summary"><span id="queue-summary-text">没有活动传输</span><progress id="queue-total-progress" max="100" value="0"></progress></div><div id="transfer-queue-list" class="transfer-queue-list"><div class="queue-empty">暂无传输任务</div></div></section>
+          <div class="sftp-help">本地拖到远程可上传；远程拖到本地可下载。文件行拖动用于面板间传输；拖到 Windows 资源管理器必须拖动每行最右侧的 ↗ 图标。远程项目只在实际尝试拖出时才临时准备，不会因选中或悬停而下载。</div>
+        </div>
+      </section>
+
+      <div class="ssh-workspace" id="ssh-workspace">
+      <section class="panel command-panel" id="command-panel">
+        <div class="pane-heading"><div><strong>命令工作区</strong><span class="subline">将 GPT 代码粘贴到这里；支持多行 shell 脚本</span></div><div class="workspace-head-tools"><label class="timeout-field">超时秒数 <input id="command-timeout" type="number" min="5" max="300" value="90" /></label><button id="interactive-mode-btn" class="btn tiny ghost" type="button" disabled>进入交互式终端</button></div></div>
+        <textarea id="command-editor" class="code-editor" spellcheck="false" placeholder="在左侧 ChatGPT 复制代码后，粘贴到这里……&#10;&#10;支持多行 shell 脚本。Ctrl+Enter 运行编辑框内容；Ctrl+Shift+Enter 粘贴剪贴板并运行。"></textarea>
+        <div class="command-actions">
+          <button id="paste-run-btn" class="btn success big" disabled>📋 粘贴并运行</button>
+          <button id="run-btn" class="btn primary big" disabled>▶ 运行编辑框代码</button>
+          <button id="clear-editor-btn" class="btn ghost">清空</button>
+        </div>
+        <div class="command-hint"><span id="editor-status">请先连接一个 SSH 会话</span><span>高风险命令需你确认；敏感文件读取仍会拦截</span></div>
+      </section>
+
+      <section class="panel terminal-panel" id="terminal-panel">
+        <div class="pane-heading"><div><strong>SSH 运行输出</strong><span class="subline">实时 stdout / stderr；保存最近运行记录，切换会话仍可查看</span></div><div class="terminal-tools"><button id="copy-record-btn" class="btn tiny ghost" disabled>复制完整记录</button><button id="copy-output-btn" class="btn tiny ghost" disabled>复制纯输出</button><button id="clear-terminal-btn" class="btn tiny ghost">清屏</button></div></div>
+        <div id="terminal" class="terminal" role="log" aria-live="polite"><pre class="log-line system">就绪。连接 SSH 后，把 ChatGPT 给出的命令粘贴到右侧，再由你决定执行。</pre></div>
+        <div class="terminal-actions"><button id="send-result-btn" class="btn primary" disabled>回传本次结果并发送到 GPT</button><span class="muted">将本次命令、stdout、stderr、退出码发到左侧当前 ChatGPT 对话。</span></div>
+      </section>
+
+      <section class="panel interactive-panel hidden" id="interactive-panel">
+        <div class="pane-heading"><div><strong>SSH 交互式终端</strong><span class="subline" id="interactive-terminal-status">使用真正的 SSH PTY Shell；右键粘贴，选中文字自动复制</span></div><div class="terminal-tools"><button id="clear-interactive-btn" class="btn tiny ghost" type="button">清空终端</button><button id="command-mode-btn" class="btn tiny primary" type="button">返回命令模式</button></div></div>
+        <div id="interactive-terminal-host" class="interactive-terminal-host"></div>
+        <div class="interactive-terminal-footer"><span id="interactive-copy-toast" class="interactive-copy-toast hidden">已复制到剪贴板</span><span>右键粘贴 · 选中文字自动复制</span></div>
+      </section>
+      </div><!-- .ssh-workspace -->
+
+    </section>
+  </main>
+  <dialog id="text-entry-dialog" class="app-dialog"><form method="dialog" id="text-entry-form"><h3 id="text-entry-title">输入</h3><p id="text-entry-description"></p><input id="text-entry-value" type="text" autocomplete="off" /><div class="dialog-actions"><button id="text-entry-cancel" class="btn ghost" value="cancel">取消</button><button id="text-entry-confirm" class="btn primary" value="confirm">确定</button></div></form></dialog>
+  <dialog id="properties-dialog" class="app-dialog"><form method="dialog"><h3 id="properties-title">文件属性</h3><pre id="properties-content" class="properties-content"></pre><div class="dialog-actions"><button class="btn primary" value="close">关闭</button></div></form></dialog>
+  <dialog id="move-dialog" class="app-dialog"><form method="dialog" id="move-form"><h3 id="move-dialog-title">移动到</h3><p id="move-dialog-description"></p><input id="move-target-input" type="text" list="move-target-options" autocomplete="off" /><datalist id="move-target-options"></datalist><div id="move-history-list" class="move-history-list"></div><div class="dialog-actions"><button class="btn ghost" value="cancel">取消</button><button class="btn primary" id="move-confirm-btn" value="confirm">移动</button></div></form></dialog>
+  <div id="sftp-context-menu" class="sftp-context-menu hidden" role="menu"></div>
+  <dialog id="remote-properties-dialog" class="app-dialog remote-properties-dialog"><form method="dialog" id="remote-properties-form">
+    <div class="remote-properties-title" id="remote-properties-title">文件属性</div>
+    <div class="remote-props-tabs" role="tablist" aria-label="文件属性标签">
+      <button id="remote-tab-general" class="remote-props-tab active" type="button" role="tab" aria-selected="true" data-props-tab="general">常规</button>
+      <button id="remote-tab-permissions" class="remote-props-tab" type="button" role="tab" aria-selected="false" data-props-tab="permissions">权限</button>
+    </div>
+    <section id="remote-props-general" class="remote-props-page" role="tabpanel">
+      <div class="remote-props-name-row"><div class="remote-props-file-icon" aria-hidden="true">▤</div><input id="remote-property-name" type="text" aria-label="文件名" spellcheck="false" autocomplete="off" /></div>
+      <div class="remote-props-rule"></div>
+      <div class="remote-props-detail-grid"><span>文件类型：</span><span id="remote-property-type">File</span></div>
+      <div class="remote-props-rule"></div>
+      <div class="remote-props-detail-grid"><span>位置：</span><span id="remote-property-location"></span><span>大小：</span><span id="remote-property-size"></span></div>
+      <div class="remote-props-rule"></div>
+      <div class="remote-props-detail-grid"><span>创建时间：</span><span id="remote-property-created">Not Available</span><span>修改时间：</span><span id="remote-property-modified">Not Available</span><span>访问时间：</span><span id="remote-property-accessed">Not Available</span></div>
+    </section>
+    <section id="remote-props-permissions" class="remote-props-page hidden" role="tabpanel">
+      <div class="remote-props-owner-grid"><label><span>所有者 ID：</span><input id="remote-property-uid" type="text" inputmode="numeric" value="0" /></label><label><span>用户组 ID：</span><input id="remote-property-gid" type="text" inputmode="numeric" value="0" /></label></div>
+      <div class="remote-props-rule"></div>
+      <div class="permission-matrix-wrap"><table class="permission-matrix"><thead><tr><th></th><th>读取</th><th>写入</th><th>执行</th></tr></thead><tbody>
+        <tr><th>所有者：</th><td><input type="checkbox" id="perm-owner-read" data-who="owner" data-bit="4" aria-label="所有者读取" /></td><td><input type="checkbox" id="perm-owner-write" data-who="owner" data-bit="2" aria-label="所有者写入" /></td><td><input type="checkbox" id="perm-owner-execute" data-who="owner" data-bit="1" aria-label="所有者执行" /></td></tr>
+        <tr><th>组：</th><td><input type="checkbox" id="perm-group-read" data-who="group" data-bit="4" aria-label="组读取" /></td><td><input type="checkbox" id="perm-group-write" data-who="group" data-bit="2" aria-label="组写入" /></td><td><input type="checkbox" id="perm-group-execute" data-who="group" data-bit="1" aria-label="组执行" /></td></tr>
+        <tr><th>其他：</th><td><input type="checkbox" id="perm-other-read" data-who="other" data-bit="4" aria-label="其他用户读取" /></td><td><input type="checkbox" id="perm-other-write" data-who="other" data-bit="2" aria-label="其他用户写入" /></td><td><input type="checkbox" id="perm-other-execute" data-who="other" data-bit="1" aria-label="其他用户执行" /></td></tr>
+      </tbody></table></div>
+      <div class="remote-props-numeric-row"><label for="remote-property-mode">八进制值：</label><input id="remote-property-mode" type="text" inputmode="numeric" maxlength="4" value="644" autocomplete="off" /><span class="remote-props-mode-hint">八进制</span></div>
+    </section>
+    <div class="dialog-actions remote-props-actions"><button id="remote-properties-confirm" type="submit" class="btn primary">确定</button><button id="remote-properties-cancel" type="button" class="btn ghost">取消</button></div>
+  </form></dialog>
+  <script src="node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

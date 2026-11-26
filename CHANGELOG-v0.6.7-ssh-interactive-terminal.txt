@@ -1,0 +1,12 @@
+N1PilotDesktop v0.6.7 — SSH Interactive Terminal
+
+Based on v0.6.6. This version changes SSH terminal behavior only; the SFTP content editor is deferred to a later version.
+
+- Added a per-tab interactive mode powered by a persistent SSH PTY Shell using ssh2 Client.shell().
+- Added xterm.js with the FitAddon for VT sequences, PTY resize, interactive programs (for example cd, vim, nano, top), and per-tab terminal scrollback.
+- Right-click pastes clipboard text into the active terminal; Ctrl+Shift+V is also supported. Paste uses xterm.js terminal paste semantics (including bracketed paste when the remote program enables it).
+- Selecting terminal text automatically copies it to the system clipboard and briefly displays a confirmation. Ctrl+C remains a terminal interrupt and is not redefined as copy.
+- Command-exec mode remains separate, and SFTP behavior is unchanged. Switching between modes hides/shows the appropriate workspace; each tab has its own mode and terminal buffer. The interactive PTY is a normal remote shell, so commands typed or pasted there do not go through command mode’s risk classifier/confirmation step.
+- Removed “上方” from “新建 SSH 会话走代理（默认关闭）”. No proxy behavior was changed.
+
+Validation note: static JavaScript checks and project smoke tests are run in the build environment. This environment cannot install npm packages or run Windows/Electron UI tests, so verify xterm asset loading, PTY behavior, right-click paste, and auto-copy on the target Windows machine.

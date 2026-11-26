@@ -1,0 +1,10 @@
+N1PilotDesktop v0.6.10 — SSH interactive terminal resize fix
+
+Based on v0.6.9. Scope is limited to the SSH workspace layout and terminal fitting.
+
+- Root cause addressed: the interactive panel had a viewport-based clamp height, and the command editor/output/interactive panel were independent flex items in a parent that had no explicit workspace child to own the remaining height. This made layout sizing brittle and could leave unused space below the terminal after a window resize.
+- Wrapped the command workspace, SSH output panel, and interactive terminal in a dedicated `.ssh-workspace` flex container. The wrapper receives the remaining height below the SSH connection/SFTP panels; the active interactive panel fills that wrapper without a viewport-height formula or fixed maximum height.
+- Set a zero flex basis and `min-height: 0` on the terminal host so xterm's viewport can fill the actual available height instead of being held to its previous intrinsic size.
+- Observe the workspace wrapper, interactive panel, and terminal host; re-fit xterm after the window layout settles during resizing.
+- SFTP file editing remains out of scope. No new UI controls were added.
+- Validation: JavaScript syntax checks and static smoke tests. This environment cannot run the user's Windows Electron UI, so a visual resize test on the user's system remains necessary.

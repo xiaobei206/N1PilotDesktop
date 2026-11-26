@@ -1,0 +1,10 @@
+N1PilotDesktop v0.6.9 — SSH interactive terminal height fix
+
+Based on v0.6.8. Scope is limited to SSH terminal layout sizing.
+
+- Root cause in v0.6.8: the app used an implicit auto-sized CSS Grid row. Setting the child right pane to height:100% did not reliably constrain that row, so its flex child could remain short while unused area remained below.
+- Explicitly constrain the main layout row with minmax(0, 1fr), so the right pane receives a definite available height.
+- In interactive mode, disable right-pane scrolling and let the terminal panel consume all remaining height after the connection and SFTP headers.
+- Use ResizeObserver to refit xterm when the host area changes size, and disconnect it when a session terminal is disposed.
+- No SFTP editor work; existing SSH modes and other functionality remain unchanged.
+- Validation: JavaScript syntax checks and project smoke tests; no live Windows UI was available in this environment.

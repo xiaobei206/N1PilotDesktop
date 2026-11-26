@@ -1,0 +1,9 @@
+N1PilotDesktop Monaco 1.0.3 — project baseline normalization
+
+- Establishes a three-part SemVer release identifier (`1.0.3`) consistently in package.json, build artifact naming, build.bat completion text, and static-test expectations.
+- Preserves the SFTP navigation performance changes and editor save-stage diagnostics from the 1.0.2.1 candidate without rewriting their behavior.
+- Preserves the BOM-free Windows build script and correct Monaco JSON diagnostics namespace from the fixed candidate.
+- Adds project-level release manifest, handoff, build report, and Windows acceptance instructions outside the source ZIP.
+- No SSH, SFTP, Monaco editor, or UI feature code was intentionally redesigned or rewritten for this normalization.
+
+Validation in this environment: `npm test` passed before normalization on the fixed source candidate and passed again after normalization (see BUILD-REPORT). Windows EXE packaging and live N1 SFTP/editor behavior remain unverified for 1.0.3.

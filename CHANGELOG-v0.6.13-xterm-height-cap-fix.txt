@@ -1,0 +1,11 @@
+N1PilotDesktop v0.6.13 — Fix interactive xterm height cap
+
+Root cause confirmed from v0.6.12 runtime logs:
+- v0.6.12 scoped the old 420px rule, but the base `.terminal` rule still had `max-height: 350px`.
+- The interactive xterm root also has the `terminal` class, so it remained capped at 350px even while its host was over 600px tall.
+
+Changes:
+- Scope the base terminal output styles to `.terminal-panel .terminal`; this keeps the classic SSH output log styling while excluding the interactive xterm root.
+- Keep the existing 420px maximum scoped to `#terminal-panel`.
+- Add regression assertions for both selector scopes.
+- No UI redesign and no changes to SSH/PTTY sizing logic.

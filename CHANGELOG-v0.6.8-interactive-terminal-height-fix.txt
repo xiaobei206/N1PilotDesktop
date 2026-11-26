@@ -1,0 +1,8 @@
+N1PilotDesktop v0.6.8 — Interactive terminal height fix
+
+Based on v0.6.7. This is a focused layout fix only.
+
+- Fixed the SSH interactive terminal workspace ending too early with unused blank space underneath.
+- When interactive mode is active, the interactive panel and xterm host now flex into the space freed by the command editor and SSH output panels; the old viewport-based height clamp no longer caps the terminal.
+- Existing command mode, SSH/PTY behavior, SFTP, proxy behavior, and other UI remain unchanged.
+- Updated project version to 0.6.8.

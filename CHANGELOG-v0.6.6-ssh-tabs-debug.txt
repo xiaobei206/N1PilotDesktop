@@ -1,0 +1,16 @@
+N1PilotDesktop v0.6.6 — SSH Tab Controls
+
+Based on N1PilotDesktop v0.6.5-properties-localization-debug.
+
+Changes:
+- Keeps a stable tab identity separate from each underlying SSH connection ID so reconnecting does not create a new tab or mix status events from an old connection into a new one.
+- Adds per-tab connected/disconnected/connecting lightning status, a reconnect button, a compact proxy toggle, a close button, and a right-click context menu.
+- Stores a per-tab connection configuration snapshot, including proxy endpoint settings; changes to the global SSH form do not alter existing tabs.
+- Switching the per-tab proxy setting reconnects only that tab; the displayed terminal history remains attached to the same tab in memory.
+- Closing a tab disconnects its underlying SSH connection and clears that tab's memory history.
+- Raises the per-tab output event and displayed-row limit from 2,500 to 10,000.
+- Makes queued SFTP tasks follow their owning SSH tab across reconnects, rather than keeping a stale connection ID.
+- Cancels pending SSH/proxy connection attempts when a connecting tab is closed.
+- Preserves the existing command workspace, SFTP UI and behavior, properties dialogs, localization engine, DEBUG controls, and Windows build settings.
+
+Validation: `npm test` covers source syntax and static smoke tests. Runtime SSH reconnect, proxy switching, SFTP interaction, and Windows UI still require live application testing.

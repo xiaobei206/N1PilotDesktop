@@ -1,0 +1,5 @@
+N1PilotDesktop v0.6.1-rebased-debug
+
+BASE: N1PilotDesktop-v0.5.1-debug.zip (not the older v0.5.2-fix branch).
+PRESERVED: custom titlebar; DEBUG toggle and log-folder button; right-expanding three-column SFTP; remote drag staging; marquee selection; multi-file drag-out; persistent DEBUG settings and logs; portable EXE build target.
+ADDED: separate 中文 / English buttons; Bitvise-inspired remote General / Permissions dialog; bidirectional octal-mode / checkbox sync; remote rename/chmod/chown through one dialog; native Windows ShellExecuteEx properties launcher with non-blocking launch and no minimize/restore cycle.

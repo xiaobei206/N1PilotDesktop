@@ -1,0 +1,26 @@
+N1PilotDesktop v1.0.1 — Fix editor close crash
+
+Fixed a main-process exception raised when a remote editor window was closed. The BrowserWindow `closed` callback previously accessed `editorWin.webContents.id` after Electron had destroyed the window/WebContents, which can throw `TypeError: Object has been destroyed`.
+
+Changes:
+- Capture the editor WebContents ID while the window is alive and use that stable ID for map registration and cleanup.
+- Mark the context closed and cancel pending geometry-save timers during `closed`.
+- Prevent delayed window-state callbacks and IPC context lookup from operating on closed editor contexts.
+- Preserve the existing SSH terminal implementation and Monaco 0.57.0 editor engine.
+
+Validation: Node syntax checks and both static smoke-test suites. This hotfix still requires a Windows Electron runtime test to confirm the close workflow on the user's machine.
+
+
+N1PilotDesktop v1.0.2 — Editor save/close reliability
+
+Changes:
+- Serialize concurrent editor save requests so repeated clicks/Ctrl+S do not launch overlapping remote save transactions.
+- Add a per-save operation ID and structured renderer diagnostics for save requests, duplicate requests, results, and close decisions.
+- Fix a close-prompt deadlock: the unsaved-changes dialog stays open while “Save and close” is pending; on failure, conflict, or newer edits, the user can retry, discard, or cancel instead of being left with a hidden dialog and a stuck closePrompting guard.
+- Add detailed main-process save-stage logs for SFTP acquisition, initial and pre-replacement snapshots, temporary write/stat, backup rename/verification, replacement rename, backup cleanup, final snapshot, failure, and handler-level errors.
+- Add an explicit “Discard drafts and Quit” option in Chinese and English. The discard path is deferred until any open-SSH confirmation is accepted; it then deletes recovery drafts and closes editor windows without waiting for draft flushing. If a remote save is still active, the UI warns that its server-side outcome may remain uncertain.
+- Log the quit choice, discard path, quit start, and cancellation caused by open SSH sessions.
+
+Validation:
+- Pending static smoke tests and syntax checks.
+- Windows Electron and live SSH/SFTP behavior still require runtime validation. SFTP callbacks that never return are now easier to localize from the last stage-begin record; this release does not claim that every remote-network stall can be safely cancelled.

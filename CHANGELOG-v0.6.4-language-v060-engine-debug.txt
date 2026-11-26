@@ -1,0 +1,5 @@
+N1PilotDesktop v0.6.4-language-v060-engine-debug
+
+Base: N1PilotDesktop-v0.6.1-rebased-debug.
+Language engine: restores v0.6.0 source-preserving WeakMap + MutationObserver approach, merges v0.6.1 UI translations, and adds uniqueness-only English-source normalization for strings written directly by v0.6.1 bilingual renderers.
+Preserved: v0.6.1 DEBUG setup/log-folder wiring, SFTP expanded three-column layout, multi-file drag, remote Bitvise-style properties, and native Windows properties helper/build path.

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>N1PilotDesktop Remote Editor</title>
+  <link rel="stylesheet" href="editor-monaco.bundle.css" />
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+  <header class="toolbar">
+    <div class="file-heading">
+      <div class="file-icon">{ }</div>
+      <div class="file-titles"><strong id="file-name">远程文件编辑器</strong><span id="file-path" title=""></span></div>
+      <span id="dirty-pill" class="pill clean">已保存</span>
+    </div>
+    <div class="toolbar-actions">
+      <button id="save-btn" class="btn primary" title="Ctrl+S">保存 <kbd>Ctrl+S</kbd></button>
+      <button id="undo-btn" class="btn" title="Ctrl+Z">撤销</button>
+      <button id="redo-btn" class="btn" title="Ctrl+Y">重做</button>
+      <span class="separator"></span>
+      <button id="find-btn" class="btn" title="Ctrl+F">查找</button>
+      <button id="replace-btn" class="btn" title="Ctrl+H">替换</button>
+      <button id="wrap-btn" class="btn" title="Toggle word wrap">自动换行：关</button>
+      <button id="check-btn" class="btn">检查</button>
+      <button id="remote-check-btn" class="btn" title="仅做 sh -n 语法检查，不执行脚本">远端 sh -n</button>
+      <button id="copy-diagnosis-btn" class="btn">复制问题描述</button>
+      <span class="separator"></span>
+      <label class="check-label" title="只改变显示，不改变实际文本"><input id="show-invisibles" type="checkbox" />不可见字符</label>
+      <label class="check-label debug-label" title="记录编辑器窗口、读取/保存、语法检查与异常；不记录文件正文"><input id="debug-toggle" type="checkbox" checked />DEBUG</label>
+      <button id="debug-log-btn" class="btn icon" title="打开 DEBUG 日志目录">日志</button>
+      <button id="language-btn" class="btn icon" title="Switch language">EN</button>
+    </div>
+  </header>
+  <div class="subtoolbar">
+    <span id="language-label">Shell / Config Editor</span>
+    <span id="remote-status" class="status-chip"><i class="dot"></i><span>正在读取远程文件…</span></span>
+    <span id="validation-status" class="status-chip">检查尚未完成</span>
+    <span class="sub-spacer"></span>
+    <label class="format-field"><span id="encoding-label">编码</span><select id="encoding-select" disabled>
+      <option value="utf8">UTF-8</option><option value="utf8bom">UTF-8 BOM</option>
+      <option value="utf16le">UTF-16 LE</option><option value="utf16le-bom">UTF-16 LE BOM</option>
+      <option value="utf16be">UTF-16 BE</option><option value="utf16be-bom">UTF-16 BE BOM</option>
+      <option value="windows1252">Windows-1252</option><option value="latin1">ISO-8859-1</option>
+    </select></label>
+    <label class="format-field"><span id="eol-label">换行</span><select id="eol-select" disabled><option value="preserve">保留原样</option><option value="LF">LF</option><option value="CRLF">CRLF</option><option value="CR">CR</option></select></label>
+  </div>
+  <div id="findbar" class="findbar hidden" role="search">
+    <div class="find-row"><label id="find-label" for="find-input">查找</label><input id="find-input" type="search" autocomplete="off" spellcheck="false" placeholder="输入要查找的文本" /><label class="match-case-label"><input id="match-case" type="checkbox" />区分大小写</label><button id="find-prev-btn" class="btn small">上一个</button><button id="find-next-btn" class="btn small">下一个</button><span id="find-count" class="find-count"></span><button id="find-close-btn" class="btn small" aria-label="关闭查找">×</button></div>
+    <div id="replace-row" class="find-row hidden"><label id="replace-label" for="replace-input">替换为</label><input id="replace-input" type="text" autocomplete="off" spellcheck="false" placeholder="输入替换文本" /><button id="replace-one-btn" class="btn small">替换</button><button id="replace-all-btn" class="btn small">全部替换</button></div>
+  </div>
+  <main class="editor-area">
+    <div id="loading-panel" class="loading-panel"><div class="spinner"></div><strong id="loading-title">正在读取远程文件</strong><span id="loading-detail">请勿关闭窗口</span></div>
+    <div id="editor-host" class="editor-host hidden"></div>
+    <div id="unsupported-panel" class="unsupported-panel hidden"><h2 id="unsupported-title">无法以文本方式打开</h2><p id="unsupported-message"></p></div>
+  </main>
+  <section class="diagnostics" id="diagnostics-panel">
+    <div class="diagnostics-heading"><div><strong id="diagnostics-title">问题检查</strong><span id="diagnostics-count">等待检查</span></div><div class="diagnostics-actions"><button id="diagnostics-clear-btn" class="btn small">清空列表</button><button id="diagnostics-toggle-btn" class="btn small">收起</button></div></div>
+    <div id="diagnostics-list" class="diagnostics-list"><div class="diagnostic-empty">修改或粘贴代码后将自动检查。</div></div>
+  </section>
+  <footer class="statusbar">
+    <span id="cursor-status">行 1，列 1</span><span class="status-divider"></span>
+    <span id="language-mode-status">Shell</span><span class="status-divider"></span>
+    <span id="encoding-status">UTF-8</span><span class="status-divider"></span>
+    <span id="eol-status">LF</span><span class="status-divider"></span>
+    <span id="size-status">0 B</span><span class="status-spacer"></span>
+    <span id="save-status">就绪</span>
+  </footer>
+
+  <dialog id="suggestion-dialog" class="modal large-modal">
+    <form method="dialog"><div class="modal-title"><h2 id="suggestion-title">检测到可能的格式问题</h2><button class="x-btn" value="cancel" aria-label="Close">×</button></div>
+      <p id="suggestion-description"></p><div id="suggestion-issues" class="suggestion-issues"></div>
+      <div class="modal-actions"><button id="suggestion-copy-btn" type="button" class="btn">复制问题描述</button><button id="suggestion-preview-btn" type="button" class="btn primary hidden">预览移除 Markdown 围栏</button><button id="suggestion-keep-btn" value="cancel" class="btn">保持原样</button></div>
+    </form>
+  </dialog>
+  <dialog id="diff-dialog" class="modal diff-modal">
+    <form method="dialog"><div class="modal-title"><h2 id="diff-title">修改预览</h2><button class="x-btn" value="cancel" aria-label="Close">×</button></div><p id="diff-description"></p>
+      <div class="diff-columns"><section><h3 id="diff-before-title">当前编辑内容</h3><pre id="diff-before"></pre></section><section><h3 id="diff-after-title">建议内容</h3><pre id="diff-after"></pre></section></div>
+      <div class="modal-actions"><button id="diff-cancel-btn" value="cancel" class="btn">取消</button><button id="diff-apply-btn" type="button" class="btn primary">应用修改（可撤销）</button></div>
+    </form>
+  </dialog>
+  <dialog id="conflict-dialog" class="modal conflict-modal">
+    <form method="dialog"><div class="modal-title"><h2 id="conflict-title">远程文件已发生变化</h2><button class="x-btn" value="cancel" aria-label="Close">×</button></div>
+      <p id="conflict-description"></p><div class="diff-columns"><section><h3 id="conflict-local-title">你的编辑版本</h3><pre id="conflict-local"></pre></section><section><h3 id="conflict-remote-title">服务器当前版本</h3><pre id="conflict-remote"></pre></section></div>
+      <p class="warning-note" id="conflict-warning"></p><div class="modal-actions"><button id="conflict-copy-btn" type="button" class="btn">复制冲突描述</button><button id="conflict-cancel-btn" value="cancel" class="btn">取消保存</button><button id="conflict-overwrite-btn" type="button" class="btn danger">仍然覆盖远程文件</button></div>
+    </form>
+  </dialog>
+  <dialog id="close-dialog" class="modal">
+    <form method="dialog"><div class="modal-title"><h2 id="close-title">文件尚未保存</h2><button class="x-btn" value="cancel" aria-label="Close">×</button></div><p id="close-description">要保存后关闭，还是丢弃修改？</p><div class="modal-actions"><button value="cancel" id="close-cancel-btn" class="btn">继续编辑</button><button id="close-discard-btn" type="button" class="btn danger">放弃修改并关闭</button><button id="close-save-btn" type="button" class="btn primary">保存并关闭</button></div></form>
+  </dialog>
+  <dialog id="recovery-dialog" class="modal">
+    <form method="dialog"><div class="modal-title"><h2 id="recovery-title">发现未保存的恢复草稿</h2><button class="x-btn" value="cancel" aria-label="Close">×</button></div><p id="recovery-description"></p><div id="recovery-choices" class="recovery-choices"></div><div class="modal-actions"><button id="recovery-ignore-btn" type="button" class="btn">忽略恢复草稿</button></div></form>
+  </dialog>
+  <script src="editor-monaco.bundle.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>

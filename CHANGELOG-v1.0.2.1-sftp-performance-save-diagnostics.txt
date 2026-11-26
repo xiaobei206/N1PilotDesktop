@@ -1,0 +1,20 @@
+N1PilotDesktop Monaco v1.0.2.1 — SFTP responsiveness and save diagnostics
+
+Changes
+- Removed the redundant remote stat before SFTP readdir in directory navigation (readdir itself validates the target).
+- SFTP channel acquisition now times out after 15 seconds and records duration/errors; late channels are closed.
+- Read-only SFTP stat operations have a 20-second timeout.
+- Remote editor read/write streams have a 30-second timeout and record byte counts, elapsed time and errors.
+- SFTP directory list timing is logged separately from renderer directory-list rendering.
+- File-list rendering batches DOM insertion using a DocumentFragment.
+- Clicking or right-clicking a row updates selection CSS in place instead of reconstructing the complete directory list.
+- Remote directory navigation ignores stale responses so a slow earlier request cannot overwrite the latest directory.
+
+Important limitations
+- SFTP mutating request callbacks such as rename/chmod/unlink do not have a generic timeout because timing out a mutation cannot prove whether the server performed it. Logs now expose the last save stage; if saving stalls at a mutating request, inspect that stage before retrying.
+- Static tests do not replace a Windows runtime test against the user's N1.
+
+Build packaging follow-up
+- Use valid internal SemVer 1.0.2-hotfix.1 to satisfy electron-builder; artifact name retains the v1.0.2.1 label.
+- Strip UTF-8 BOM from build.bat so CMD executes @echo off normally.
+- Correct Monaco JSON diagnostics namespace to monaco.languages.json.jsonDefaults and update smoke-test expectations.

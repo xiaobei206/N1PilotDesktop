@@ -1,0 +1,17 @@
+N1PilotDesktop v0.6.12 — Interactive xterm height cap fix
+
+Based on v0.6.11-window-interactive-terminal-debug, using the supplied Windows runtime log.
+
+Root cause found:
+- The legacy rule `.right-pane .terminal { max-height: 420px }` was intended for the classic SSH output log.
+- The interactive xterm root also has the class `terminal`, so this selector accidentally capped xterm at 420px even when its host was about 767px tall and FitAddon had sized the PTY grid to 49 rows.
+- The debug log showed `.xterm` at 420px, `maxHeight: 420px`, `scrollHeight: 753px`, and `scrollTop: 333`, while `#interactive-terminal-host` was about 767px tall. This matches the leaked CSS cap.
+
+Fix:
+- Scope the cap to `.right-pane #terminal-panel .terminal`, so it affects only the classic SSH output log and not the interactive terminal.
+- Add a static regression test that enforces this selector scope and rejects the old broad selector.
+- No other UI redesign or unrelated behavior changes.
+
+Validation:
+- JavaScript syntax checks and static smoke tests are run before delivery.
+- A live Windows Electron GUI resize test is not available in this build environment; please verify the interactive terminal reaches the bottom after testing the new build on Windows.

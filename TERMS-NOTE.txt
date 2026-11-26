@@ -1,0 +1,3 @@
+This project is a local desktop helper. It is not affiliated with or endorsed by OpenAI, Electron, or the authors of ssh2. ChatGPT access uses the ordinary web interface in an embedded browser and is subject to the service's terms and account limits. Review all shell commands before execution.
+
+Version 0.6.10 uses the MIT-licensed @xterm/xterm 6.0.0 terminal component and @xterm/addon-fit 0.11.0. Their license notices are distributed with the npm packages in node_modules and the packaged app.

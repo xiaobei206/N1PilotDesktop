@@ -1,0 +1,17 @@
+N1PilotDesktop v0.6.11 — Window and interactive terminal diagnostics
+
+Purpose: collect real Windows runtime evidence for the interactive terminal height issue. No speculative layout CSS change is included in this version.
+
+Logs added (existing DEBUG checkbox controls logging):
+- Electron BrowserWindow bounds/content bounds on creation, resize, maximize/unmaximize/restore, full-screen, show/hide, and SFTP width expansion/collapse.
+- Renderer viewport and document dimensions.
+- Actual DOM geometry and CSS sizing for .layout, .right-pane, connection/SFTP panels, #ssh-workspace, command/output panels, #interactive-panel, #interactive-terminal-host, active terminal instance, xterm root/viewport/screen.
+- Client/offset/scroll dimensions and overflow/flex/min-height/max-height properties to identify the ancestor limiting height or causing scrolling.
+- ResizeObserver callback sizes, xterm fit before/after measurements, xterm cols/rows, and remote PTY resize request/application/error.
+- PTY start/ready/close/error state correlated by session/tab IDs.
+
+The new layout diagnostics do not include SSH passwords, command text, or terminal output. Existing SFTP diagnostics may still contain file paths or names as before.
+
+Log file: application userData/logs/sftp-debug.log. Use the existing “日志目录” button in the SFTP header to open the folder. Reproduce the problem while DEBUG is enabled, then share sftp-debug.log.
+
+Validation: node syntax checks and static smoke tests. No live Electron/Windows UI test was possible in this environment.

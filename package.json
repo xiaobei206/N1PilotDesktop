@@ -1,0 +1,52 @@
+{
+  "name": "gpt-ssh-pilot",
+  "version": "1.0.3",
+  "description": "N1PilotDesktop with independent Monaco-based remote text editor windows and protected SFTP saving",
+  "main": "main.js",
+  "author": "Local user tool",
+  "license": "MIT",
+  "scripts": {
+    "start": "npm run build:editor && electron .",
+    "dist:win": "npm run build:editor && electron-builder --win portable --x64",
+    "test": "node --check main.js && node --check preload.js && node --check renderer.js && node --check editor-preload.js && node --check editor.js && node --check editor-monaco-entry.js && node --check scripts/build-editor.js && node tests/smoke.js && node tests/editor-smoke.js",
+    "build:editor": "node scripts/build-editor.js"
+  },
+  "dependencies": {
+    "ssh2": "^1.17.0",
+    "@xterm/xterm": "6.0.0",
+    "@xterm/addon-fit": "0.11.0",
+    "diff": "^8.0.2",
+    "iconv-lite": "^0.6.3",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.11",
+    "monaco-editor": "0.57.0"
+  },
+  "build": {
+    "appId": "local.n1pilotdesktop.manual",
+    "productName": "N1PilotDesktop Manual Workspace",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "N1PilotDesktop-Monaco-v1.0.3-${arch}.${ext}",
+      "signAndEditExecutable": true,
+      "icon": "assets/n1pilot.ico"
+    },
+    "portable": {},
+    "artifactName": "N1PilotDesktop-Monaco-v1.0.3-${arch}.${ext}",
+    "extraResources": [
+      {
+        "from": "assets/N1PilotProperties.exe",
+        "to": "N1PilotProperties.exe"
+      }
+    ]
+  }
+}

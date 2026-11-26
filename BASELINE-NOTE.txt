@@ -1,0 +1,8 @@
+N1PilotDesktop v1.0.0 baseline note
+
+- Source baseline: user-confirmed v0.6.13 (SSH interactive terminal height fix, SFTP and existing UI).
+- Added independent remote editor windows as an additive feature. Multiple selected remote files can each be opened in separate resizable windows.
+- Editor engine is Monaco Editor 0.57.0. It is bundled locally with esbuild and embedded worker scripts; it does not use CodeMirror or a runtime CDN.
+- SSH terminal code and primary workspace layout are retained from the v0.6.13 baseline. Any unrelated UI redesign is out of scope.
+- Windows build entry point remains build.bat and electron-builder's portable x64 target.
+- Static tests do not replace a successful Windows Monaco bundle/EXE build and live SFTP editing test.

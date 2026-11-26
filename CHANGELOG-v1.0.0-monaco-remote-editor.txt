@@ -1,0 +1,11 @@
+N1PilotDesktop v1.0.0 — Monaco Remote Editor
+
+- Keeps the user-confirmed v0.6.13 SSH interactive terminal and existing SFTP workflows as the baseline. Does not redesign the main UI or intentionally alter SSH implementation.
+- Adds independent resizable Electron windows for individual SFTP remote text files; multiple files can be open concurrently.
+- Uses Monaco Editor 0.57.0 (not CodeMirror) with locally bundled ESM and inline self-contained workers; no editor CDN dependency.
+- Keeps automatic indentation, auto-close brackets/quotes, format-on-type and format-on-paste disabled to avoid silently changing spaces, tabs, newlines or structure. The invisible-character display includes ordinary spaces, tabs and suspicious Unicode without editing the underlying text.
+- Includes language highlighting/markers, JSON/YAML diagnostics, cautious Shell structure checks, invisible/suspicious text warnings, paste hygiene checks, before/after suggestion diffs, find/replace, folding and status display.
+- Preserves remote hash conflict checking, temp-write + backup/replace/rollback workflow, best-effort permissions/ownership preservation, encrypted recovery drafts, quit-time draft flush, and per-file window geometry.
+- `scripts/build-editor.js` bundles Monaco and worker entry points for Electron's local file windows. `build.bat` builds the Monaco assets before packaging the Windows portable EXE.
+
+Validation boundary: source syntax and project static tests are available. The diff-preview modal and invisible-character matcher received additional edge-case fixes in the final static-review pass. The current Linux container cannot access npm registry DNS and has no Windows Electron GUI, so an actual Monaco bundle, Windows portable EXE and real SSH/SFTP GUI test were not run here. Verify the first Windows build and editor-worker startup before using it to change important remote files.

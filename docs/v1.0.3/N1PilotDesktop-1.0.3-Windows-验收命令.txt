@@ -1,0 +1,41 @@
+N1PilotDesktop 1.0.3 — Windows 验收命令
+
+A. 首次构建
+
+1. 将 N1PilotDesktop-1.0.3.zip 解压到新的独立目录，例如：
+   D:\npm\N1PilotDesktop-1.0.3
+2. 打开 CMD 或 PowerShell，进入项目目录。不要覆盖旧版本工作目录。
+3. 首次构建推荐直接执行：
+
+   build.bat
+
+   build.bat 会优先使用 .tools\node 中的 node.exe/npm.cmd；如不存在则使用 PATH 中的 Node，并调用 ensure-node.ps1 准备便携 Node。脚本内部使用 npm.cmd。
+
+B. 分步测试（PowerShell）
+
+   Set-Location 'D:\npm\N1PilotDesktop-1.0.3'
+   if (Test-Path '.\.tools\node\npm.cmd') { $npmCmd = (Resolve-Path '.\.tools\node\npm.cmd').Path } else { $npmCmd = 'npm.cmd' }
+
+   node --version
+   & $npmCmd test
+   if ($LASTEXITCODE -ne 0) { throw 'npm test failed' }
+
+   & $npmCmd run build:editor
+   if ($LASTEXITCODE -ne 0) { throw 'Monaco bundle build failed' }
+
+   & $npmCmd run dist:win
+   if ($LASTEXITCODE -ne 0) { throw 'Windows portable packaging failed' }
+
+注意：Windows PowerShell 中统一使用 npm.cmd，不要直接调用 npm；不需要修改 ExecutionPolicy。若 build.bat 已经完成依赖安装，分步命令可直接使用已安装依赖。
+
+C. 用户 GUI/SFTP 验收
+
+1. 首次启动：检查主窗口、SSH 会话、SFTP 双栏和交互式 xterm 终端能否正常工作。
+2. 局域网 N1：连续进入 3 层下级目录、返回上级目录；记录每次目录切换的 DEBUG 事件 `directory.remote.open.complete`，比较 `requestElapsedMs`、`renderElapsedMs`。
+3. Monaco：打开小型文本文件，检查语法高亮、中文输入、Tab/Enter、查找替换及多窗口行为。
+4. 保存成功：修改小文件并保存，确认服务器文件内容确实改变，关闭编辑器后不再提示未保存。
+5. 保存失败/冲突：用可控方式制造远程文件变更或权限错误，确认编辑器保留内容、提示原因且允许重试/放弃/取消。不要在未确认上次服务器端写入结果时盲目重复破坏性写操作。
+6. 退出：分别验证取消退出、保存草稿并退出、不保存草稿直接退出。
+7. 整理日志：使用 N1 LogLens 过滤 editor/save、SFTP 和错误上下文后再分享；分享前检查远程路径及其他敏感信息。
+
+验收报告必须分别记录：静态检查、Monaco bundle、portable EXE、GUI、N1 SFTP 和真实远程保存。未执行的项目标记“未执行”，不得写通过。
