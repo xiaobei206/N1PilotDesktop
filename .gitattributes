@@ -5,3 +5,4 @@
 *.exe binary
 *.zip binary
 *.7z binary
+build.bat text eol=crlf
