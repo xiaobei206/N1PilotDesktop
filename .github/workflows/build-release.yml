@@ -1,0 +1,104 @@
+name: Windows build and GitHub Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-release.yml"
+      - ".bootstrap/**"
+      - "package.json"
+      - "VERSION"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: n1pilotdesktop-build-release
+  cancel-in-progress: false
+
+jobs:
+  build-test-release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Reconstruct and verify source plus handoff documents
+        shell: pwsh
+        run: python .bootstrap/reconstruct.py
+      - name: Commit reconstructed source and documentation to main
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "Import N1PilotDesktop v1.0.3 source and handoff documentation"
+            git push origin HEAD:main
+          } else {
+            Write-Host "Source tree already reconstructed."
+          }
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install dependencies
+        run: npm.cmd install --no-audit --no-fund --no-package-lock
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      - name: Build native Windows file-properties helper
+        shell: pwsh
+        run: |
+          powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File native/build-properties-helper.ps1 -Source native/PropertiesLauncher.cs -Output assets/N1PilotProperties.exe
+          if (-not (Test-Path assets/N1PilotProperties.exe)) { throw "Native properties helper was not generated." }
+      - name: Run syntax checks and smoke tests
+        run: npm.cmd test
+      - name: Build Windows portable EXE
+        run: npm.cmd run dist:win
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      - name: Rebuild verified source archive
+        run: python scripts/package-source.py
+      - name: Verify artifact and write CI report
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path dist -Filter "N1PilotDesktop-Monaco-v1.0.3-x64.exe" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw "Expected portable artifact not found under dist/." }
+          $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $exe.FullName).Hash.ToLowerInvariant()
+          @"
+          # N1PilotDesktop 1.0.3 - GitHub Actions Windows Build
+
+          - Runner: windows-latest
+          - Node.js: $(node --version)
+          - npm: $(npm.cmd --version)
+          - Static tests: passed
+          - Windows portable EXE: $($exe.Name)
+          - EXE size: $($exe.Length) bytes
+          - EXE SHA-256: $sha
+          - Target Windows GUI and real N1 SSH/SFTP acceptance: not performed by CI
+          "@ | Set-Content -Encoding utf8 docs/v1.0.3/N1PilotDesktop-1.0.3-CI-BUILD-REPORT.md
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.3
+          target_commitish: main
+          name: N1PilotDesktop v1.0.3
+          body_path: docs/RELEASE-NOTES-v1.0.3.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/N1PilotDesktop-Monaco-v1.0.3-x64.exe
+            dist/release-assets/N1PilotDesktop-1.0.3.zip
+            dist/release-assets/N1PilotDesktop-1.0.3.zip.sha256
+            checksums/N1PilotDesktop-1.0.3-SOURCE-MANIFEST.sha256
+            docs/v1.0.3/N1PilotDesktop-1.0.3-CI-BUILD-REPORT.md
+          fail_on_unmatched_files: true
