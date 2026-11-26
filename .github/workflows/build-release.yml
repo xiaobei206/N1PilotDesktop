@@ -102,3 +102,5 @@ jobs:
             checksums/N1PilotDesktop-1.0.3-SOURCE-MANIFEST.sha256
             docs/v1.0.3/N1PilotDesktop-1.0.3-CI-BUILD-REPORT.md
           fail_on_unmatched_files: true
+
+# Trigger workflow from the verified contents API commit.
