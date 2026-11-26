@@ -14,13 +14,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: n1pilotdesktop-build-release
+  group: n1pilotdesktop-build-release-v2
   cancel-in-progress: false
 
 jobs:
   build-test-release:
     if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -30,9 +31,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Reconstruct and verify source plus handoff documents
+      - name: Reconstruct and verify source plus handoff documents (first import only)
         shell: pwsh
-        run: python .bootstrap/reconstruct.py
+        run: |
+          if (Test-Path .bootstrap/reconstruct.py) {
+            python .bootstrap/reconstruct.py
+          } else {
+            Write-Host "Complete source and handoff documents are already committed; skipping first-import bootstrap."
+          }
       - name: Commit reconstructed source and documentation to main
         shell: pwsh
         run: |
@@ -52,9 +58,7 @@ jobs:
           cache: npm
           cache-dependency-path: package.json
       - name: Install dependencies
-        run: npm.cmd install --no-audit --no-fund --no-package-lock
-        env:
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+        run: npm.cmd install --no-audit --no-fund --no-package-lock --fetch-retries=2 --fetch-timeout=120000
       - name: Build native Windows file-properties helper
         shell: pwsh
         run: |
@@ -64,8 +68,6 @@ jobs:
         run: npm.cmd test
       - name: Build Windows portable EXE
         run: npm.cmd run dist:win
-        env:
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
       - name: Rebuild verified source archive
         run: python scripts/package-source.py
       - name: Verify artifact and write CI report
